@@ -116,9 +116,7 @@ public class CoinsSelectionScene {
         });
 
         // Create Next and Back buttons
-        Button nextButton = createButton("Next");
         Button backButton = createButton("Back");
-        nextButton.setPrefWidth(200);
         backButton.setPrefWidth(200);
 
         // Back button logic
@@ -133,12 +131,14 @@ public class CoinsSelectionScene {
             startScene.playBackgroundMusic("/MainDir/introMusic.wav");
         });
 
+
+
         // Next button logic
-        nextButton.setOnAction(e -> {
+        manualBtn.setOnAction(e -> {
             playClickSound("/MainDir/clickSound.wav");
 
-            CharSelectionScene charSelectionScene = new CharSelectionScene();
-            Scene scene = charSelectionScene.createScene(primaryStage);
+            ManualSelectionScene manualSelectionScene = new ManualSelectionScene();
+            Scene scene = manualSelectionScene.createScene(primaryStage);
             mainApp.switchToScene(scene);
 
             stopBackgroundMusic();
@@ -147,7 +147,7 @@ public class CoinsSelectionScene {
         // Create a container for the toggle button, back button, and next button
         HBox hBox = new HBox(20); // Horizontal box with spacing of 20
         hBox.setStyle("-fx-alignment: center;");
-        hBox.getChildren().addAll(toggleButton, backButton, nextButton);
+        hBox.getChildren().addAll(toggleButton, backButton);
 
         // Add components to layout
         layout.getChildren().addAll(label, randomBtn, manualBtn, fileBtn, fileNameField, hBox);
