@@ -21,7 +21,6 @@ import java.util.Arrays;
 
 public class ManualSelectionScene {
 
-    private Clip clip;
     private int[] coinsArray;
 
     public Scene createScene(Stage primaryStage) {

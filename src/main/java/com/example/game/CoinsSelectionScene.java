@@ -89,31 +89,7 @@ public class CoinsSelectionScene {
                 " -fx-font-size: 18px; -fx-font-weight: bold;" +
                 " -fx-background-radius: 15px; -fx-padding: 10px 20px;");
 
-        TextField fileNameField = new TextField();
-        fileNameField.setVisible(false);
-        fileNameField.setEditable(false);
-        fileNameField.setMaxWidth(350);
-        fileNameField.setMinWidth(350);
 
-        fileBtn.setOnAction(e -> {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Select Coin Data File");
-
-            // Set file extensions for filtering (user can only upload txt file)
-            fileChooser.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("Text Files", "*.txt"));
-
-            // Show the FileChooser dialog
-            java.io.File selectedFile = fileChooser.showOpenDialog(primaryStage);
-
-            if (selectedFile != null) {
-                System.out.println("Selected file: " + selectedFile.getAbsolutePath());
-                fileNameField.setText(selectedFile.getAbsolutePath());
-                fileNameField.setVisible(true);
-            } else {
-                System.out.println("File selection cancelled.");
-            }
-        });
 
         // Create Next and Back buttons
         Button backButton = createButton("Back");
@@ -133,16 +109,33 @@ public class CoinsSelectionScene {
 
 
 
-        // Next button logic
         manualBtn.setOnAction(e -> {
             playClickSound("/MainDir/clickSound.wav");
 
             ManualSelectionScene manualSelectionScene = new ManualSelectionScene();
             Scene scene = manualSelectionScene.createScene(primaryStage);
             mainApp.switchToScene(scene);
+            stopBackgroundMusic(); // Stop the music
 
-            stopBackgroundMusic();
+
         });
+
+        fileBtn.setOnAction(e -> {
+            System.out.println("File Button Clicked");
+            playClickSound("/MainDir/clickSound.wav");
+
+            FileSelectionScene fileSelectionScene = new FileSelectionScene();
+            Scene scene = fileSelectionScene.createScene(primaryStage);
+            if (scene != null) {
+                mainApp.switchToScene(scene);
+                System.out.println("Scene switched successfully.");
+            } else {
+                System.err.println("Failed to create FileSelectionScene.");
+            }
+            stopBackgroundMusic(); // Stop the music
+
+        });
+
 
         // Create a container for the toggle button, back button, and next button
         HBox hBox = new HBox(20); // Horizontal box with spacing of 20
@@ -150,7 +143,7 @@ public class CoinsSelectionScene {
         hBox.getChildren().addAll(toggleButton, backButton);
 
         // Add components to layout
-        layout.getChildren().addAll(label, randomBtn, manualBtn, fileBtn, fileNameField, hBox);
+        layout.getChildren().addAll(label, randomBtn, manualBtn, fileBtn, hBox);
 
         // Use StackPane to set background
         StackPane root = new StackPane();
