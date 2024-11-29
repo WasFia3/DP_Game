@@ -130,8 +130,8 @@ public class FileSelectionScene {
             confirmationAlert.showAndWait().ifPresent(response -> {
                 if (response == confirmButton) {
                     // Save the coins array and proceed to the next scene
-                    CharSelectionScene charSelectionScene = new CharSelectionScene();
-                    Scene scene = charSelectionScene.createScene(primaryStage);
+                    GameModeScene gameModeScene = new GameModeScene();
+                    Scene scene = gameModeScene.createScene(primaryStage, coinsArray);
                     mainApp.switchToScene(scene);
                 } else {
                     // If the user cancels, show feedback or do nothing

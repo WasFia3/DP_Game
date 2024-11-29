@@ -1,6 +1,6 @@
 package com.example.game;
 
-import javax.sound.sampled.Clip;
+import javax.sound.sampled.*;
 
 import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
@@ -17,6 +17,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 public class ManualSelectionScene {
@@ -113,6 +114,7 @@ public class ManualSelectionScene {
         // Back button
         Button backButton = createButton("Back");
         backButton.setOnAction(e -> {
+            playClickSound("/MainDir/clickSound.wav");
             CoinsSelectionScene coinsSelectionScene = new CoinsSelectionScene();
             Scene scene = coinsSelectionScene.createScene(primaryStage);
             mainApp.switchToScene(scene);
@@ -121,6 +123,7 @@ public class ManualSelectionScene {
         // Next button to validate input
         Button nextButton = createButton("Next");
         nextButton.setOnAction(e -> {
+            playClickSound("/MainDir/clickSound.wav");
             String numCoinsText = numberOfCoinsField.getText();
             String coinValuesText = coinValuesField.getText();
 
@@ -155,8 +158,8 @@ public class ManualSelectionScene {
                 if (response == confirmButton) {
                     // Save the coins array and proceed to the next scene
                     this.coinsArray = coins;
-                    CharSelectionScene charSelectionScene = new CharSelectionScene();
-                    Scene scene = charSelectionScene.createScene(primaryStage);
+                    GameModeScene gameModeScene = new GameModeScene();
+                    Scene scene = gameModeScene.createScene(primaryStage, coinsArray);
                     mainApp.switchToScene(scene);
                 } else {
                     // If the user cancels, show feedback or do nothing
@@ -240,6 +243,18 @@ public class ManualSelectionScene {
         button.setOnAction(e -> translateTransition.playFromStart());
 
         return button;
+    }
+
+    // Play click sound
+    public void playClickSound(String fileName) {
+        try {
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(getClass().getResource(fileName));
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioStream);
+            clip.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
     }
 
     public int[] getCoinsArray() {

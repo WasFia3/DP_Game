@@ -30,11 +30,11 @@ public class CharSelectionScene {
 
     // Selected Characters variables:
 
-    private String playerCharacter = null;    // Tracks the player's selected character
-    private String computerCharacter = null;  // Tracks the computer's assigned character
+    private String plyer1Character = null;    // Tracks the player's selected character
+    private String plyer2Character = null;  // Tracks the computer's assigned character
 
     // Method to create the selection scene
-    public Scene createScene(Stage primaryStage) {
+    public Scene createScene(Stage primaryStage, String mode, int [] coins) {
 
         Main mainApp = (Main) primaryStage.getUserData(); //This allows you to access
                                                      // Main methods in this class we are in,
@@ -158,20 +158,27 @@ public class CharSelectionScene {
         });
 
         startButton.setOnAction(e -> {
-            if (playerCharacter != null && isSelected(playerCharacter)) {
+            if (plyer1Character != null && isSelected(plyer1Character)) {
                 // Play the click sound
                 playClickSound("/MainDir/clickSound.wav");
 
-                // Create and switch to the StartScene
+                // Create and switch to the GameScene
                 GameScene gameScene = new GameScene();
-                Scene scene = gameScene.createScene(primaryStage, playerCharacter, computerCharacter); // Create the StartScene
-                mainApp.switchToScene(scene);  // Use Main's method to switch the scene
+
+                // Check if the mode is "2Player", if so, assign both players
+                if ("2Player".equals(mode)) {
+                    // Use the playerCharacter for player1 and computerCharacter for player2
+                    Scene scene = gameScene.createScene(primaryStage, plyer1Character, plyer2Character, mode, coins);
+                    mainApp.switchToScene(scene);  // Switch to the new scene
+                } else {
+                    // If it's not 2Player mode, keep the previous logic
+                    Scene scene = gameScene.createScene(primaryStage, plyer1Character, plyer2Character, mode, coins);
+                    mainApp.switchToScene(scene);  // Switch to the new scene
+                }
 
                 // Stop current background music if applicable
                 stopBackgroundMusic();
 
-                // Play game music BEHAHA
-                playBackgroundMusic("/GameDir/gameBKMusic.wav");
             } else {
                 // Either playerCharacter is null or not selected
                 System.out.println("User didn't pick a character before clicking on start");
@@ -188,6 +195,7 @@ public class CharSelectionScene {
                 alert.showAndWait();
             }
         });
+
 
 
 
@@ -236,11 +244,11 @@ public class CharSelectionScene {
 
     // Logic for selecting a character
     private void selectCharacter(String chosenCharacter, String remainingCharacter, Stage primaryStage) {
-        playerCharacter = chosenCharacter;
-        computerCharacter = remainingCharacter;
+        plyer1Character = chosenCharacter;
+        plyer2Character = remainingCharacter;
 
-        System.out.println("Player selected: " + playerCharacter);
-        System.out.println("Computer assigned: " + computerCharacter);
+        System.out.println("Player selected: " + plyer1Character);
+        System.out.println("Computer assigned: " + plyer2Character);
 
         playClickSound("/MainDir/clickSound.wav");
 
@@ -304,7 +312,7 @@ public class CharSelectionScene {
 
     // Method to check if a character is selected or not
     public boolean isSelected(String character){
-        if(playerCharacter.equals(null))
+        if(plyer1Character.equals(null))
         return false;
         else
             return true;

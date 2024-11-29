@@ -136,6 +136,23 @@ public class CoinsSelectionScene {
 
         });
 
+        randomBtn.setOnAction(e -> {
+            System.out.println("File Button Clicked");
+            playClickSound("/MainDir/clickSound.wav");
+
+            RandomSelectionScene randomSelectionScene = new RandomSelectionScene();
+            Scene scene = randomSelectionScene.createScene(primaryStage);
+            if (scene != null) {
+                mainApp.switchToScene(scene);
+                System.out.println("Scene switched successfully.");
+            } else {
+                System.err.println("Failed to create FileSelectionScene.");
+            }
+            stopBackgroundMusic(); // Stop the music
+
+        });
+
+
 
         // Create a container for the toggle button, back button, and next button
         HBox hBox = new HBox(20); // Horizontal box with spacing of 20
