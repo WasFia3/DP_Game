@@ -113,7 +113,7 @@ public class GameModeScene {
                 mainApp.switchToScene(scene);
             }
         });
-
+//
         navigationButtons.getChildren().addAll(backButton, startButton);
 
         // Combine all components
