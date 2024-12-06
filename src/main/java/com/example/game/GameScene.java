@@ -1,7 +1,7 @@
 package com.example.game;
 
-import javafx.animation.ScaleTransition;
-import javafx.animation.TranslateTransition;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -21,11 +21,14 @@ import java.net.URL;
 
 public class GameScene {
 
+    private boolean isPlayer1Turn = true;  // Track whose turn it is
     private Clip clip;
     private int player1Coins = 0;
     private int player2Coins = 0;
+    private int[] coinsArray;
 
-    public Scene createScene(Stage primaryStage, String player1, String player2, String mode, int [] coins) {
+    public Scene createScene(Stage primaryStage, String player1, String player2, String mode, int[] coins) {
+        this.coinsArray = coins.clone(); // Store the coins for the game
 
         // Ensure Main instance is properly set
         Main mainApp = (Main) primaryStage.getUserData();
@@ -46,59 +49,40 @@ public class GameScene {
         HBox topContainer = new HBox(200); // Add spacing between elements
         topContainer.setAlignment(Pos.TOP_CENTER);
 
-        HBox coinDisplay1 = createCoinDisplay("Player 1 Coins: ", player1Coins, "/GameDir/coin.png");
-        HBox coinDisplay2 = createCoinDisplay("Player 2 Coins: ", player2Coins, "/GameDir/coin.png");
+        HBox coinDisplay1 = createCoinDisplay("Knight Coins: ", player1Coins, "/GameDir/coin.png");
+        HBox coinDisplay2 = createCoinDisplay("Hornet Coins: ", player2Coins, "/GameDir/coin.png");
 
         topContainer.getChildren().addAll(coinDisplay1, coinDisplay2);
         BorderPane.setAlignment(topContainer, Pos.TOP_CENTER);
         root.setTop(topContainer);
 
-        // Center: Player Images and Labels
+        // Center: Player Images, Labels, and Coin Array
         HBox centerContainer = new HBox(200); // Space between players
         centerContainer.setAlignment(Pos.CENTER);
 
-        // Handle player and image assignment based on mode
-        VBox playerBox1;
-        VBox playerBox2;
+        VBox playerBox1 = createPlayerBox("Knight", "/GameDir/knightLeft.png");
+        VBox playerBox2 = createPlayerBox("Hornet", "/GameDir/hornetRight.png");
 
-        if (mode.equalsIgnoreCase("computer")) {
-            // Computer mode: Knight on the left, Hornet on the right
-            playerBox1 = createPlayerBox("Knight", "/GameDir/knightLeft.png");
-            playerBox2 = createPlayerBox("Hornet", "/GameDir/hornetRight.png");
-        } else if (mode.equalsIgnoreCase("2player")) {
-            // 2-player mode
-            if (player1.equalsIgnoreCase("Hornet")) {
-                // Hornet is Player 1, Knight is Player 2
-                playerBox1 = createPlayerBox("Hornet", "/GameDir/hornetLeft.png");
-                playerBox2 = createPlayerBox("Knight", "/GameDir/knightRight.png");
-            } else {
-                // Knight is Player 1, Hornet is Player 2
-                playerBox1 = createPlayerBox("Knight", "/GameDir/knightLeft.png");
-                playerBox2 = createPlayerBox("Hornet", "/GameDir/hornetRight.png");
-            }
-        } else {
-            // Fallback case (defaulting to Knight vs Hornet)
-            playerBox1 = createPlayerBox("Knight", "/GameDir/knightLeft.png");
-            playerBox2 = createPlayerBox("Hornet", "/GameDir/hornetRight.png");
-        }
+        // Coin Array Display (Horizontal)
+        HBox coinArrayDisplay = createHorizontalCoinArray();
 
-        centerContainer.getChildren().addAll(playerBox1, playerBox2);
+        centerContainer.getChildren().addAll(playerBox1, coinArrayDisplay, playerBox2);
         root.setCenter(centerContainer);
 
         // Bottom: Buttons
         HBox bottomContainer = new HBox(20);
         bottomContainer.setAlignment(Pos.CENTER);
 
-        ToggleButton toggleMusicButton = createMusicToggleButton();
+
+
         Button backButton = createStyledButton("Back");
         Button replayButton = createStyledButton("Replay");
 
         backButton.setOnAction(e -> {
             stopBackgroundMusic();
             GameModeScene gameModeScene = new GameModeScene();
-            Scene scene = gameModeScene.createScene(primaryStage,coins);
+            Scene scene = gameModeScene.createScene(primaryStage, coins);
             mainApp.switchToScene(scene);
-
         });
 
         replayButton.setOnAction(e -> {
@@ -106,15 +90,45 @@ public class GameScene {
             player2Coins = 0;
             updateCoinLabel(coinDisplay1, "Player 1 Coins: ", player1Coins);
             updateCoinLabel(coinDisplay2, "Player 2 Coins: ", player2Coins);
+            coinsArray = coins.clone(); // Reset the coins
+            updateCoinArrayDisplay(coinArrayDisplay);
         });
 
-        bottomContainer.getChildren().addAll(toggleMusicButton, backButton, replayButton);
+        // Create Audio and Sound options Images:
+        Image musicIconImg = new Image(getClass().getResource("/MainDir/music.png").toExternalForm());
+        ImageView musicIconView = new ImageView(musicIconImg);
+        musicIconView.setFitWidth(30);
+        musicIconView.setFitHeight(30);
+
+        Image noMusicIconImg = new Image(getClass().getResource("/MainDir/noMusic.png").toExternalForm());
+        ImageView noMusicIconView = new ImageView(noMusicIconImg);
+        noMusicIconView.setFitWidth(30);
+        noMusicIconView.setFitHeight(30);
+
+        // Create a ToggleButton and set it to selected by default (ON state)
+        ToggleButton toggleButton = new ToggleButton("");
+        toggleButton.setGraphic(musicIconView);
+        toggleButton.setSelected(true); // Set the toggle button to "ON" by default
+
+        // Toggle button action for music control
+        toggleButton.setOnAction(event -> {
+            if (toggleButton.isSelected()) {
+                System.out.println("Music is ON");
+                toggleButton.setGraphic(musicIconView);
+                playBackgroundMusic("/GameDir/gameBKMusic.wav"); // Start music
+            } else {
+                System.out.println("Music is OFF");
+                toggleButton.setGraphic(noMusicIconView);
+                stopBackgroundMusic(); // Stop the music
+            }
+        });
+
+        bottomContainer.getChildren().addAll(toggleButton, backButton, replayButton);
         root.setBottom(bottomContainer);
 
-        // Testing CHECKED
-        for (int i = 0; i < coins.length; i++) {
-            System.out.println("Element at index " + i + ": " + coins[i]);
-        }
+        // Start automatic game play (simulating two players automatically)
+        startGameSimulation(coinArrayDisplay, coinDisplay1, coinDisplay2);
+
         return new Scene(root, 800, 600);
     }
 
@@ -131,7 +145,6 @@ public class GameScene {
         label.setStyle("-fx-text-fill: white; -fx-font-size: 16px;");
 
         coinBox.getChildren().addAll(coinView, label);
-
         return coinBox;
     }
 
@@ -149,117 +162,144 @@ public class GameScene {
         playerLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px;");
 
         playerBox.getChildren().addAll(playerView, playerLabel);
-
         return playerBox;
     }
 
-    private ToggleButton createMusicToggleButton() {
-        Image musicOnImg = new Image(getClass().getResource("/MainDir/music.png").toExternalForm());
-        ImageView musicOnView = new ImageView(musicOnImg);
-        musicOnView.setFitWidth(30);
-        musicOnView.setFitHeight(30);
+    private HBox createHorizontalCoinArray() {
+        HBox coinArrayBox = new HBox(10); // Spacing between coins
+        coinArrayBox.setAlignment(Pos.CENTER);
 
-        Image musicOffImg = new Image(getClass().getResource("/MainDir/noMusic.png").toExternalForm());
-        ImageView musicOffView = new ImageView(musicOffImg);
-        musicOffView.setFitWidth(30);
-        musicOffView.setFitHeight(30);
-
-        ToggleButton toggleButton = new ToggleButton();
-        toggleButton.setGraphic(musicOnView);
-        toggleButton.setOnAction(e -> {
-            if (toggleButton.isSelected()) {
-                toggleButton.setGraphic(musicOffView);
-                stopBackgroundMusic();
-            } else {
-                toggleButton.setGraphic(musicOnView);
-                playBackgroundMusic("/GameDir/gameBKMusic.wav");
-            }
-        });
-
-        return toggleButton;
-    }
-
-
-    // Method to create styled buttons with animations
-
-    private Button createStyledButton(String labelText) {
-            Button button = new Button(labelText);
-            button.setStyle("-fx-background-color: MEDIUMPURPLE; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold; -fx-background-radius: 15px; -fx-padding: 10px 20px;");
-            button.setPrefWidth(200);
-
-            ScaleTransition scaleTransition = new ScaleTransition(Duration.millis(200), button);
-            scaleTransition.setToX(1.2);
-            scaleTransition.setToY(1.2);
-
-            ScaleTransition resetScaleTransition = new ScaleTransition(Duration.millis(200), button);
-            resetScaleTransition.setToX(1.0);
-            resetScaleTransition.setToY(1.0);
-
-            DropShadow hoverGlow = new DropShadow();
-            hoverGlow.setColor(Color.LIGHTBLUE);
-            hoverGlow.setRadius(15);
-            hoverGlow.setSpread(0.5);
-
-            button.setOnMouseEntered(e -> {
-                scaleTransition.playFromStart();
-                button.setEffect(hoverGlow);
-            });
-
-            button.setOnMouseExited(e -> {
-                resetScaleTransition.playFromStart();
-                button.setEffect(null);
-            });
-
-            TranslateTransition translateTransition = new TranslateTransition(Duration.millis(100), button);
-            translateTransition.setByY(-10);
-            translateTransition.setAutoReverse(true);
-            translateTransition.setCycleCount(2);
-
-            button.setOnAction(e -> {
-                playClickSound("/MainDir/clickSound.wav");
-                translateTransition.playFromStart();
-            });
-
-            return button;
+        for (int coin : coinsArray) {
+            Label coinLabel = new Label(String.valueOf(coin));
+            coinLabel.setStyle("-fx-background-color: CADETBLUE; -fx-padding: 10px; -fx-border-radius: 15px; -fx-font-size: 16px; -fx-text-fill: black;");
+            coinArrayBox.getChildren().add(coinLabel);
         }
 
-    private void updateCoinLabel(HBox coinDisplay, String text, int coins) {
-        Label label = (Label) coinDisplay.getChildren().get(1);
+        return coinArrayBox;
+    }
+
+    private void updateCoinArrayDisplay(HBox coinArrayDisplay) {
+        coinArrayDisplay.getChildren().clear(); // Clear current display
+        for (int coin : coinsArray) {
+            Label coinLabel = new Label(String.valueOf(coin));
+            coinLabel.setStyle("-fx-background-color: CADETBLUE; -fx-padding: 10px; -fx-border-radius: 15px; -fx-font-size: 16px; -fx-text-fill: black;");
+            coinArrayDisplay.getChildren().add(coinLabel);
+        }
+    }
+
+    private void startGameSimulation(HBox coinArrayDisplay, HBox coinDisplay1, HBox coinDisplay2) {
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.seconds(1), e -> {
+                    if (coinsArray.length == 0) {
+                        return; // Game is over
+                    }
+
+                    int pick;
+                    if (isPlayer1Turn) {
+                        pick = pickCoinForPlayer1();
+                        player1Coins += coinsArray[pick];
+                        updateCoinLabel(coinDisplay1, "Player 1 Coins: ", player1Coins);
+                    } else {
+                        pick = pickCoinForPlayer2();
+                        player2Coins += coinsArray[pick];
+                        updateCoinLabel(coinDisplay2, "Player 2 Coins: ", player2Coins);
+                    }
+
+                    // Remove picked coin and update display
+                    coinsArray = removeElement(coinsArray, pick);
+                    updateCoinArrayDisplay(coinArrayDisplay);
+
+                    isPlayer1Turn = !isPlayer1Turn; // Switch turns
+                })
+        );
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();
+    }
+
+    private int pickCoinForPlayer1() {
+        // Logic for Player 1 to pick a coin (you can adjust the strategy)
+        return 0; // Example: always pick the first coin
+    }
+
+    private int pickCoinForPlayer2() {
+        // Logic for Player 2 to pick a coin (you can adjust the strategy)
+        return 0; // Example: always pick the first coin
+    }
+
+    private void updateCoinLabel(HBox coinBox, String text, int coins) {
+        Label label = (Label) coinBox.getChildren().get(1); // Assuming the label is the second child
         label.setText(text + coins);
     }
 
-    public void playClickSound(String fileName) {
-        try {
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(getClass().getResource(fileName));
-            Clip clip = AudioSystem.getClip();
-            clip.open(audioStream);
-            clip.start();
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
-            e.printStackTrace();
-        }
+    private ToggleButton createMusicToggleButton() {
+        ToggleButton musicButton = new ToggleButton("Toggle Music");
+        musicButton.setStyle("-fx-font-size: 16px;");
+        musicButton.setOnAction(event -> {
+            if (musicButton.isSelected()) {
+                stopBackgroundMusic();
+            } else {
+                playBackgroundMusic("/GameDir/gameBKMusic.wav");
+            }
+        });
+        return musicButton;
     }
 
-    public void playBackgroundMusic(String musicFilePath) {
-        stopBackgroundMusic();
+    private void playBackgroundMusic(String musicPath) {
         try {
-            URL resource = getClass().getResource(musicFilePath);
-            if (resource == null) {
-                throw new IOException("Music file not found: " + musicFilePath);
-            }
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(resource);
+            URL url = getClass().getResource(musicPath);
+            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(url);
             clip = AudioSystem.getClip();
-            clip.open(audioStream);
+            clip.open(audioInputStream);
             clip.loop(Clip.LOOP_CONTINUOUSLY);
-            clip.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void stopBackgroundMusic() {
-        if (clip != null && clip.isRunning()) {
+    private void stopBackgroundMusic() {
+        if (clip != null) {
             clip.stop();
-            clip.close();
         }
     }
+
+    private int[] removeElement(int[] array, int index) {
+        if (index < 0 || index >= array.length) {
+            return array; // If index is out of bounds, return the original array
+        }
+
+        int[] newArray = new int[array.length - 1];
+        System.arraycopy(array, 0, newArray, 0, index);
+        System.arraycopy(array, index + 1, newArray, index, array.length - index - 1);
+        return newArray;
+    }
+
+    private Button createStyledButton(String text) {
+        Button button = new Button(text);
+
+        // Apply styles for the buttons
+        button.setStyle(
+                "-fx-background-color: MEDIUMPURPLE; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-size: 20px; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-background-radius: 15px; " +
+                        "-fx-padding: 10px 20px;"
+        );
+
+        button.setPrefWidth(200);
+
+        // Add hover effect
+        DropShadow hoverEffect = new DropShadow();
+        hoverEffect.setColor(Color.LIGHTBLUE);
+        hoverEffect.setRadius(15);
+        hoverEffect.setSpread(0.5);
+
+        button.setOnMouseEntered(e -> button.setEffect(hoverEffect));
+        button.setOnMouseExited(e -> button.setEffect(null));
+
+        return button;
+    }
+
+
+
 }
