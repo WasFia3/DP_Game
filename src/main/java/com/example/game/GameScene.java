@@ -8,15 +8,16 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.effect.InnerShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import javax.sound.sampled.*;
-import java.io.IOException;
 import java.net.URL;
 
 public class GameScene {
@@ -73,8 +74,6 @@ public class GameScene {
         HBox bottomContainer = new HBox(20);
         bottomContainer.setAlignment(Pos.CENTER);
 
-
-
         Button backButton = createStyledButton("Back");
         Button replayButton = createStyledButton("Replay");
 
@@ -86,13 +85,24 @@ public class GameScene {
         });
 
         replayButton.setOnAction(e -> {
+            // Reset the game variables
             player1Coins = 0;
             player2Coins = 0;
             updateCoinLabel(coinDisplay1, "Player 1 Coins: ", player1Coins);
             updateCoinLabel(coinDisplay2, "Player 2 Coins: ", player2Coins);
-            coinsArray = coins.clone(); // Reset the coins
+            coinsArray = coins.clone(); // Reset the coins array
+
+            // Clear the winner label if it's displayed
+            root.setCenter(centerContainer);  // Reset to the initial game state without the winner label
+
+            // Update the coin array display
             updateCoinArrayDisplay(coinArrayDisplay);
+
+            // Restart the game simulation
+            startGameSimulation(coinArrayDisplay, coinDisplay1, coinDisplay2, root);
+
         });
+
 
         // Create Audio and Sound options Images:
         Image musicIconImg = new Image(getClass().getResource("/MainDir/music.png").toExternalForm());
@@ -127,7 +137,7 @@ public class GameScene {
         root.setBottom(bottomContainer);
 
         // Start automatic game play (simulating two players automatically)
-        startGameSimulation(coinArrayDisplay, coinDisplay1, coinDisplay2);
+        startGameSimulation(coinArrayDisplay, coinDisplay1, coinDisplay2, root);
 
         return new Scene(root, 800, 600);
     }
@@ -187,11 +197,20 @@ public class GameScene {
         }
     }
 
-    private void startGameSimulation(HBox coinArrayDisplay, HBox coinDisplay1, HBox coinDisplay2) {
-        Timeline timeline = new Timeline(
+    private Timeline gameTimeline;  // Add this at the class level to keep track of the timeline
+
+    private void startGameSimulation(HBox coinArrayDisplay, HBox coinDisplay1, HBox coinDisplay2, BorderPane root) {
+        // Stop any existing timeline before starting a new one
+        if (gameTimeline != null) {
+            gameTimeline.stop();
+        }
+
+        gameTimeline = new Timeline(
                 new KeyFrame(Duration.seconds(1), e -> {
                     if (coinsArray.length == 0) {
-                        return; // Game is over
+                        // Game over, determine winner
+                        endGame(coinDisplay1, coinDisplay2, root);
+                        return; // Stop further game actions
                     }
 
                     int pick;
@@ -208,40 +227,47 @@ public class GameScene {
                     // Remove picked coin and update display
                     coinsArray = removeElement(coinsArray, pick);
                     updateCoinArrayDisplay(coinArrayDisplay);
-
                     isPlayer1Turn = !isPlayer1Turn; // Switch turns
                 })
         );
-        timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();
+        gameTimeline.setCycleCount(Timeline.INDEFINITE); // Run until manually stopped
+        gameTimeline.play();
+    }
+
+
+    private void endGame(HBox coinDisplay1, HBox coinDisplay2, BorderPane root) {
+        // Determine the winner
+        String winnerMessage;
+        if (player1Coins > player2Coins) {
+            winnerMessage = "Knight Wins!";
+        } else if (player1Coins < player2Coins) {
+            winnerMessage = "Hornet Wins!";
+        } else {
+            winnerMessage = "It's a Draw!";
+        }
+
+        // Display the winner message in the center
+        Label winnerLabel = new Label(winnerMessage);
+        // Styling game title label with the function styleLabel
+        styleLabel(winnerLabel, "white", "MEDIUMPURPLE");
+        winnerLabel.setAlignment(Pos.CENTER);
+
+        VBox winnerBox = new VBox(winnerLabel);
+        winnerBox.setAlignment(Pos.CENTER);
+        root.setCenter(winnerBox);  // Show winner message in the center
     }
 
     private int pickCoinForPlayer1() {
-        // Logic for Player 1 to pick a coin (you can adjust the strategy)
         return 0; // Example: always pick the first coin
     }
 
     private int pickCoinForPlayer2() {
-        // Logic for Player 2 to pick a coin (you can adjust the strategy)
         return 0; // Example: always pick the first coin
     }
 
     private void updateCoinLabel(HBox coinBox, String text, int coins) {
         Label label = (Label) coinBox.getChildren().get(1); // Assuming the label is the second child
         label.setText(text + coins);
-    }
-
-    private ToggleButton createMusicToggleButton() {
-        ToggleButton musicButton = new ToggleButton("Toggle Music");
-        musicButton.setStyle("-fx-font-size: 16px;");
-        musicButton.setOnAction(event -> {
-            if (musicButton.isSelected()) {
-                stopBackgroundMusic();
-            } else {
-                playBackgroundMusic("/GameDir/gameBKMusic.wav");
-            }
-        });
-        return musicButton;
     }
 
     private void playBackgroundMusic(String musicPath) {
@@ -276,7 +302,6 @@ public class GameScene {
     private Button createStyledButton(String text) {
         Button button = new Button(text);
 
-        // Apply styles for the buttons
         button.setStyle(
                 "-fx-background-color: MEDIUMPURPLE; " +
                         "-fx-text-fill: white; " +
@@ -288,7 +313,6 @@ public class GameScene {
 
         button.setPrefWidth(200);
 
-        // Add hover effect
         DropShadow hoverEffect = new DropShadow();
         hoverEffect.setColor(Color.LIGHTBLUE);
         hoverEffect.setRadius(15);
@@ -300,6 +324,24 @@ public class GameScene {
         return button;
     }
 
+    // Styling method for the label
+    public static void styleLabel(Label label, String textColor, String strokeColor) {
+        label.setFont(Font.font("Courier New bold", 48));
+        label.setStyle("-fx-text-fill: " + textColor + "; -fx-font-weight: bold;");
+
+        DropShadow dropShadow = new DropShadow();
+        dropShadow.setColor(Color.valueOf(strokeColor));
+        dropShadow.setRadius(10);
+        dropShadow.setSpread(0.6);
+
+        InnerShadow innerShadow = new InnerShadow();
+        innerShadow.setColor(Color.WHITE);
+        innerShadow.setRadius(5);
+        innerShadow.setChoke(0.7);
+
+        dropShadow.setInput(innerShadow);
+        label.setEffect(dropShadow);
+    }
 
 
 }
